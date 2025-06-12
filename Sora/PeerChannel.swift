@@ -641,39 +641,40 @@ class PeerChannel: NSObject, RTCPeerConnectionDelegate {
       }
     }
   }
-    
-    func addStereoToFmtp(_ sdp: String) -> String {
-        let lines = sdp.components(separatedBy: "\n")
-        var opusPayloadType: String? = nil
-        var modifiedLines: [String] = []
 
-        // まず opus の payload type を探す
-        for line in lines {
-            if line.starts(with: "a=rtpmap:") && line.contains("opus/48000") {
-                let parts = line.components(separatedBy: CharacterSet(charactersIn: ": "))
-                if parts.count >= 2 {
-                    opusPayloadType = parts[1]
-                }
-            }
+  func addStereoToFmtp(_ sdp: String) -> String {
+    let lines = sdp.components(separatedBy: "\n")
+    var opusPayloadType: String? = nil
+    var modifiedLines: [String] = []
+
+    // まず opus の payload type を探す
+    for line in lines {
+      if line.starts(with: "a=rtpmap:") && line.contains("opus/48000") {
+        let parts = line.components(separatedBy: CharacterSet(charactersIn: ": "))
+        if parts.count >= 2 {
+          opusPayloadType = parts[1]
         }
-
-        // fmtp 行に stereo=1 を追加
-        for line in lines {
-            if let pt = opusPayloadType,
-               line.starts(with: "a=fmtp:\(pt)") {
-                if line.contains("stereo=1") {
-                    modifiedLines.append(line)
-                } else {
-                    modifiedLines.append(line.trimmingCharacters(in: .whitespacesAndNewlines) + ";stereo=1")
-                }
-            } else {
-                modifiedLines.append(line)
-            }
-        }
-
-        return modifiedLines.joined(separator: "\n")
+      }
     }
-    
+
+    // fmtp 行に stereo=1 を追加
+    for line in lines {
+      if let pt = opusPayloadType,
+        line.starts(with: "a=fmtp:\(pt)")
+      {
+        if line.contains("stereo=1") {
+          modifiedLines.append(line)
+        } else {
+          modifiedLines.append(line.trimmingCharacters(in: .whitespacesAndNewlines) + ";stereo=1")
+        }
+      } else {
+        modifiedLines.append(line)
+      }
+    }
+
+    return modifiedLines.joined(separator: "\n")
+  }
+
   private func createAnswer(
     isSender: Bool,
     offer: String,
@@ -733,7 +734,6 @@ class PeerChannel: NSObject, RTCPeerConnectionDelegate {
 
         Logger.debug(type: .peerChannel, message: "did create answer")
 
-          
         let stereoSDP = self.addStereoToFmtp(answer!.sdp)
         let stereoAnswer = RTCSessionDescription(type: .answer, sdp: stereoSDP)
 
